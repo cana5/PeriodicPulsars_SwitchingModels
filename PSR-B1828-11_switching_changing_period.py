@@ -47,7 +47,7 @@ plt.savefig('precession_data.pdf')
 
 # Fill in the function to describe precession:
 def SignalModel(time, nudot1, nudot2, nuddot, T_0, Tdot, rA, rB, rC, phi0, 
-                sigma):
+                sigma,**kwargs):
 
     # This is the independent variable minus the MJD value:
     time = time - 49621 * 86400
@@ -157,3 +157,21 @@ result = tupak.run_sampler(
     likelihood=likelihood, priors=priors, sampler='dynesty', npoints=100,
     walks=10, outdir=outdir, label=label, clean=True)
 result.plot_corner()
+
+# Define a new plot:
+fig, ax = plt.subplots()
+
+# Run values from 'result.posterior' and fit the data:
+for i in range(4000):
+    sample_dictionary = result.posterior.sample().to_dict('records')[0]
+    sample_dictionary.update(fixed_priors)
+    ax.plot(MJD_seconds, SignalModel(MJD_seconds, **sample_dictionary), 
+            color='gray', alpha=0.05)
+
+# Plot the fitted data:
+ax.scatter(MJD_seconds, nudot, marker='.')
+txt = ("Graph of the changing period switching function with multiple data "
+       "fitted parameters, and the pulsar's data points.")
+plt.figtext(0.5, 0.01, txt, wrap=True, horizontalalignment='center', 
+            fontsize=10)
+fig.savefig('{}/data_with_fit.pdf'.format(outdir))
