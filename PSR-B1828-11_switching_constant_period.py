@@ -1,12 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 25 19:28:44 2018
-
-@author: cana5
-"""
 # Import the following programs:
 from __future__ import division
-import tupak
+import bilby
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -46,8 +40,8 @@ plt.tight_layout()
 plt.savefig('precession_data.pdf')
 
 # Fill in the function to describe precession:
-def SignalModel(time, nudot1, nudot2, nuddot, T, tAB, tBC, tCD, phi0, sigma,
-               **kwargs):
+def SignalModel(time, nudot1, nudot2, nuddot, T, tAB, tBC, tCD, phi0, sigma, 
+                **kwargs):
 
     # This is the independent variable minus the MJD value:
     time = time - 49621 * 86400
@@ -113,40 +107,39 @@ def SignalModel(time, nudot1, nudot2, nuddot, T, tAB, tBC, tCD, phi0, sigma,
    
 
 # This is the 'likelihood' function:
-likelihood = tupak.core.likelihood.GaussianLikelihood(x=MJD_seconds, y=nudot, 
-                                                      function=SignalModel)
+likelihood = bilby.core.likelihood.GaussianLikelihood(x=MJD_seconds, y=nudot, 
+                                                      func=SignalModel)
 
 # Fill in the priors/parameters for the appropriate values:
 priors = {}
-
-# These values do not have parameters:
-priors['nuddot'] = 8.75 * 10**(-25)
-
-# Define the above fixed priors explicitly:
 fixed_priors = priors.copy()
 
 # These values have a minimum and maximum parameter:
-priors['nudot1'] = tupak.prior.Uniform(minimum=-3.66 * 10**(-13), maximum=-3.63
-      * 10**(-13), name='nudot1')
-priors['nudot2'] = tupak.prior.Uniform(minimum=-3.67 * 10**(-13), maximum=-3.66
-      * 10**(-13), name='nudot2')
+priors['nudot1'] = bilby.core.prior.Uniform(minimum=-3.66 * 10**(-13), 
+      maximum=-3.63 * 10**(-13), name='nudot1')
+priors['nudot2'] = bilby.core.prior.Uniform(minimum=-3.67 * 10**(-13), 
+      maximum=-3.66 * 10**(-13), name='nudot2')
 
-priors['tAB'] = tupak.prior.Uniform(minimum=0, maximum=250 * seconds_in_day, 
-      name='tAB')
-priors['tBC'] = tupak.prior.Uniform(minimum=70 * seconds_in_day, maximum=250 * 
-      seconds_in_day, name='tBC')
-priors['tCD'] = tupak.prior.Uniform(minimum=0, maximum=250 * seconds_in_day, 
-      name='tCD')
-priors['T'] = tupak.prior.Uniform(minimum=450 * seconds_in_day, 
+priors['tAB'] = bilby.core.prior.Uniform(minimum=0, maximum=250 * 
+      seconds_in_day, name='tAB')
+priors['tBC'] = bilby.core.prior.Uniform(minimum=70 * seconds_in_day, 
+      maximum=250 * seconds_in_day, name='tBC')
+priors['tCD'] = bilby.core.prior.Uniform(minimum=0, maximum=250 * 
+      seconds_in_day, name='tCD')
+priors['T'] = bilby.core.prior.Uniform(minimum=450 * seconds_in_day, 
       maximum=550 * seconds_in_day, name='T')
 
-priors['phi0'] = tupak.prior.Uniform(minimum=0, maximum=1, name='phi0')
-priors['sigma'] = tupak.core.prior.Uniform(0, 1e-15, 'sigma')
+priors['phi0'] = bilby.core.prior.Uniform(minimum=0, maximum=1, name='phi0')
+priors['sigma'] = bilby.core.prior.Uniform(0, 1e-15, 'sigma')
+
+# This value has a mean and standard deviation (normal distribution):
+priors['nuddot'] = bilby.core.prior.Gaussian(8.75 * 10**(-25), 9 * 10**(-27), 
+      'nuddot')
 
 # Run the sampler:
-result = tupak.run_sampler(
-    likelihood=likelihood, priors=priors, sampler='dynesty', npoints= 100,
-    walks=10, outdir=outdir, label=label, clean=True)
+result = bilby.sampler.run_sampler(
+    likelihood=likelihood, priors=priors, sampler='nestle', nlive= 1000,
+    walks=50, outdir=outdir, label=label, clean=True)
 result.plot_corner()
 
 # Define a new plot:
@@ -161,8 +154,8 @@ for i in range(4000):
 
 # Plot the fitted data:
 ax.scatter(MJD_seconds, nudot, marker='.')
-txt = ("Graph of the changing period switching function with multiple data "
-       "fitted parameters, and the pulsar's data points.")
+txt = ("Graph of the switching function with multiple data fitted parameters, "
+       "and the pulsar's data points.")
 plt.figtext(0.5, 0.01, txt, wrap=True, horizontalalignment='center', 
             fontsize=10)
 fig.savefig('{}/data_with_fit.pdf'.format(outdir))
