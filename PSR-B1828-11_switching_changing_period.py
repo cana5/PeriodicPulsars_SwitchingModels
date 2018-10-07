@@ -1,12 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 25 10:03:47 2018
-
-@author: cana5
-"""
 # Import the following programs:
 from __future__ import division
-import tupak
+import bilby
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -47,7 +41,7 @@ plt.savefig('precession_data.pdf')
 
 # Fill in the function to describe precession:
 def SignalModel(time, nudot1, nudot2, nuddot, T_0, Tdot, rA, rB, rC, phi0, 
-                sigma,**kwargs):
+                sigma, **kwargs):
 
     # This is the independent variable minus the MJD value:
     time = time - 49621 * 86400
@@ -120,42 +114,41 @@ def SignalModel(time, nudot1, nudot2, nuddot, T_0, Tdot, rA, rB, rC, phi0,
     return F1_ave
 
 # This is the 'likelihood' function:
-likelihood = tupak.core.likelihood.GaussianLikelihood(x=MJD_seconds, y=nudot, 
-                                                      function=SignalModel)
+likelihood = bilby.core.likelihood.GaussianLikelihood(x=MJD_seconds, y=nudot, 
+                                                      func=SignalModel)
 
 # Fill in the priors/parameters for the appropriate values:
 priors = {}
-
-# This value does not have a parameter:
-priors['nuddot'] = 8.75 * 10**(-25)
-
-# Define the above fixed prior explicitly:
 fixed_priors = priors.copy()
 
-# These values have a minimum and maximum parameter:
-priors['nudot1'] = tupak.prior.Uniform(minimum=-3.66 * 10**(-13), maximum=-3.63
-      * 10**(-13), name='nudot1')
-priors['nudot2'] = tupak.prior.Uniform(minimum=-3.67 * 10**(-13), maximum=-3.66
-      * 10**(-13), name='nudot2')
+# These values have a minimum and maximum parameter (uniform distribution):
+priors['nudot1'] = bilby.core.prior.Uniform(minimum=-3.66 * 10**(-13), 
+      maximum=-3.63 * 10**(-13), name='nudot1')
+priors['nudot2'] = bilby.core.prior.Uniform(minimum=-3.67 * 10**(-13), 
+      maximum=-3.66 * 10**(-13), name='nudot2')
 
-priors['rA'] = tupak.prior.Uniform(minimum=0, maximum=1, name='rA')
-priors['rB'] = tupak.prior.Uniform(minimum=0, maximum=1, 
+priors['rA'] = bilby.core.prior.Uniform(minimum=0, maximum=1, name='rA')
+priors['rB'] = bilby.core.prior.Uniform(minimum=0, maximum=1, 
       name='rB')
-priors['rC'] = tupak.prior.Uniform(minimum=0, maximum=1, 
+priors['rC'] = bilby.core.prior.Uniform(minimum=0, maximum=1, 
       name='rC')
 
-priors['T_0'] = tupak.prior.Uniform(minimum=450 * seconds_in_day, 
+priors['T_0'] = bilby.core.prior.Uniform(minimum=450 * seconds_in_day, 
       maximum=550 * seconds_in_day, name='T_0')
-priors['Tdot'] = tupak.prior.Uniform(minimum=-0.02, maximum=0, 
+priors['Tdot'] = bilby.core.prior.Uniform(minimum=-0.02, maximum=0, 
       name='Tdot')
 
-priors['phi0'] = tupak.prior.Uniform(minimum=0, maximum=1, name='phi0')
-priors['sigma'] = tupak.core.prior.Uniform(0, 1e-15, 'sigma')
+priors['phi0'] = bilby.core.prior.Uniform(minimum=0, maximum=1, name='phi0')
+priors['sigma'] = bilby.core.prior.Uniform(0, 1e-15, 'sigma')
+
+# This value has a mean and standard deviation (normal distribution):
+priors['nuddot'] = bilby.core.prior.Gaussian(8.75 * 10**(-25), 9 * 10**(-27), 
+      'nuddot')
 
 # Run the sampler:
-result = tupak.run_sampler(
-    likelihood=likelihood, priors=priors, sampler='dynesty', npoints=100,
-    walks=10, outdir=outdir, label=label, clean=True)
+result = bilby.sampler.run_sampler(
+    likelihood=likelihood, priors=priors, sampler='nestle', nlive=1000,
+    walks=50, outdir=outdir, label=label, clean=True)
 result.plot_corner()
 
 # Define a new plot:
